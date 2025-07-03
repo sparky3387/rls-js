@@ -1802,7 +1802,7 @@ function _normalizerTransformer(r, prev, next) {
 /**
  * Creates a new text transformer chain that normalizes text to a lower-case,
  * clean form, suitable for title matching. It's more aggressive than the cleaner.
- * @returns {Collapser} A coigured Collapser instance for normalizing text.
+ * @retus {Collapser} A coigured Collapser instance for normalizing text.
  * @private
  */
 function _newNormalizer() {
@@ -1891,7 +1891,7 @@ class TagLexer extends Lexer {
 function newTrimWhitespaceLexer() {
     const s = '(\\t|\\n|\\f|\\r| |⭐|\ufe0f)+';
     const s_extended = '(\\\\t|\\n|\\\\f|\\\\r| |âe0f)+';
-    const prefix = new RegExp(`^${s}`);
+    const prefix = newgExp(`^${s}`);
  const suffix = new RegExp(`${s}$`);
     const prefix_extended = new RegExp(`^${s_extended}`);
     const suffix_extended = new RegExp(`${s_extended}$`);
@@ -2480,10 +2480,10 @@ class GenreLexer extends Lexer {
         const tagv = genre_infos.filter(info => info.other).map(info => info.other);
 
         const s = `\\(?(${v.join('|')})\\s*\\)`;
-        this.re = new RegExp(`^${s}`, 'i');
-        this.lb_re = new RegExp(`\\(\\s*${s}$`, 'i');
+        this.re = new RE2(`^${s}`, 'i');
+        this.lb_re = new RE2(`\\(\\s*${s}$`, 'i');
         if (tagv.length > 0) {
-            this.other_re = new RegExp(`^(${tagv.join('|')})\\b`, 'i');
+            this.other_re = new RE2(`^(${tagv.join('|')})\\b`, 'i');
         }
         this.genref = _createFindFunc(...genre_infos);
         this.lexFunc = this._lex.bind(this);
@@ -2495,14 +2495,14 @@ class GenreLexer extends Lexer {
      * @private
      */
     _lex(parser, src, buf, start, end, i, n) {	
-        let m = src.substring(i, n).match(this.re);
+        let m = this.re.exec(src.substring(i, n));
         if (m && this.lb_re.test(src.substring(0, i + m[0].length))) {
             start.push(Tag.new(TagType.GENRE, this.genref, m[0], m[1]));
             return [start, end, i + m[0].length, n, true];
         }
 
         if (this.other_re) {
-            m = buf.substring(i, n).match(this.other_re);
+            m = this.other_re.exec(buf.substring(i, n));
             if (m) {
                 start.push(Tag.new(TagType.GENRE, this.genref, m[0], m[1]));
                 return [start, end, i + m[0].length, n, true];
@@ -4418,3 +4418,4 @@ module.exports = {
     ReleaseType,
     TagType,
 };
+

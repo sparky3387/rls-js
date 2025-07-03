@@ -1,6 +1,6 @@
 {
-  "name": "rls-parser",
-  "version": "1.0.0",
+  "name": "@x4trioz925c3/rls-parser",
+  "version": "1.0.1",
   "description": "A comprehensive NodeJS release name parser.",
   "main": "rls.js",
   "dependencies": {
@@ -11,5 +11,17 @@
     "test": "node test-runner.js"
   },
   "author": "sparky3387",
-  "license": "ISC"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sparky3387/rls-js.git"
+  },
+  "keywords": [
+    "Release",
+    "Parser"
+  ],
+  "bugs": {
+    "url": "https://github.com/sparky3387/rls-js/issues"
+  },
+  "homepage": "https://github.com/sparky3387/rls-js#readme"
 }
