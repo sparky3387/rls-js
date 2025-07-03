@@ -1,0 +1,15 @@
+{
+  "name": "rls-parser",
+  "version": "1.0.0",
+  "description": "A comprehensive NodeJS release name parser.",
+  "main": "rls.js",
+  "dependencies": {
+    "he": "^1.2.0",
+    "re2": "^1.17.7"
+  },
+  "scripts": {
+    "test": "node test-runner.js"
+  },
+  "author": "sparky3387",
+  "license": "ISC"
+}
