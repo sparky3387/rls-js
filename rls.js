@@ -1891,8 +1891,8 @@ class TagLexer extends Lexer {
 function newTrimWhitespaceLexer() {
     const s = '(\\t|\\n|\\f|\\r| |⭐|\ufe0f)+';
     const s_extended = '(\\\\t|\\n|\\\\f|\\\\r| |âe0f)+';
-    const prefix = newgExp(`^${s}`);
- const suffix = new RegExp(`${s}$`);
+    const prefix = new RegExp(`^${s}`);
+    const suffix = new RegExp(`${s}$`);
     const prefix_extended = new RegExp(`^${s_extended}`);
     const suffix_extended = new RegExp(`${s_extended}$`);
 
@@ -1975,62 +1975,58 @@ class DateLexer extends Lexer {
             if (!m) continue;
 
             const matchStr = src.substring(i, i + m[0].length);
-            const matchEndPos = i + m[0].length;
 
-            if (matchStr.includes('.') && matchEndPos < n && src[matchEndPos] === '.' && /\d/.test(src[matchEndPos + 1])) {
-                continue;
-            }
-
-            let year = "", month = "", day = "";
+            let year = "", month = "", day = "", isValid = true;		
             const groups = m.groups || {};
-            let is_valid_pattern = true;
 
             for (const name in groups) {
                 const val_str = groups[name];
                 if (val_str == null) continue;
 
-                if (name === "y_2006" || name === "2006") {
+                if (name === "2006") {		    
                     year = val_str;
-                } else if (name === "y_YY") {
+                } else if (name === "YY") {
+                    if (val_str.length !== 2) { isValid = false; break; }
                     year = "20" + val_str;
-                } else if (name === "m_01" || name === "m_02") {
+                } else if (name === "01") {
+                    if (val_str.length !== 2) { isValid = false; break; }			
                     month = String(parseInt(val_str, 10)).padStart(2, '0');
-                } else if (name === "m_Jan" || name === "m_January") {
-                    if (/\d/.test(val_str)) {
-                        month = String(parseInt(val_str, 10)).padStart(2, '0');
-                    } else {
-                        const monthNum = new Date(Date.parse(val_str +" 1, 2012")).getMonth() + 1;
-                        if (!isNaN(monthNum)) {
-                            month = String(monthNum).padStart(2, '0');
-                        } else {
-                            is_valid_pattern = false;
-                            break;
+                } else if (name === "02" || name === "_2") {
+                    if (name === '02' && val_str.length !== 2) { isValid = false; break; }
+                    if (val_str.length === 0 || val_str.length > 2) { isValid = false; break; }	
+                    day = String(parseInt(val_str, 10)).padStart(2, '0');
+                } else if (name === "Jan") {
+                    if (val_str.length !== 3) { isValid = false; break; }
+                    const monthNum = new Date(Date.parse(val_str +" 1, 2012")).getMonth() + 1;
+                    if (!isNaN(monthNum)) {
+                        month = String(monthNum).padStart(2, '0');			
+                    }
+                } else if (name === "January") {
+                    if (val_str.length <= 3) { isValid = false; break; }
+                     const monthNum = new Date(Date.parse(val_str +" 1, 2012")).getMonth() + 1;
+                    if (!isNaN(monthNum)) {
+                        month = String(monthNum).padStart(2, '0');			
+                    }
+                }
+            }
+
+            if (isValid && (year || month || day)) {
+                 try {
+                    const y_val = parseInt(year, 10);
+                    const m_val = parseInt(month, 10) || 1;
+                    const d_val = parseInt(day, 10) || 1;
+                    if (y_val > 0) {
+                        const d = new Date(y_val, m_val - 1, d_val);
+                        if (d.getFullYear() !== y_val || d.getMonth() !== m_val - 1 || d.getDate() !== d_val) {
+                             continue;
                         }
                     }
-                } else if (name === "d_01" || name === "d_02" || name === "d__2") {
-                    day = String(parseInt(val_str, 10)).padStart(2, '0');
+                } catch (e) {
+                    continue;
                 }
-            }
-
-            if (!is_valid_pattern || (!year && (month || day))) continue;
-
-            try {
-                const y_val = parseInt(year, 10);
-                const m_val = parseInt(month, 10) || 1;
-                const d_val = parseInt(day, 10) || 1;
-                if (y_val > 0) {
-                    const d = new Date(y_val, m_val - 1, d_val);
-                    if (d.getFullYear() !== y_val || d.getMonth() !== m_val - 1 || d.getDate() !== d_val) {
-                        continue;
-                    }
-                }
-            } catch (e) {
-                continue;
-            }
-
-            if (year || month || day) {
-                start.push(Tag.new(TagType.DATE, null, matchStr, year, month, day));
-                return [start, end, matchEndPos, n, true];
+		    
+                start.push(Tag.new(TagType.DATE, null, m[0], year, month, day));
+                return [start, end, i + m[0].length, n, true];		    
             }
         }
         return [start, end, i, n, false];
@@ -3011,6 +3007,24 @@ function defaultLexerTypes() {
                 // 2CDS
                 '^(?P<c>[2-9])(?P<x>cds)\\b',
             ),
+            () => new DateLexer(
+                // 2006-01-02, 2006
+                '(?i)^(?P<2006>(?:19|20)\\d{2})(?:[\\-\\_\\. ](?P<01>\\d{2})[\\-\\_\\. ](?P<02>\\d{2}))?\\b',
+                // 2006-01
+                '(?i)^(?P<2006>(?:19|20)\\d{2})?:[\\-\\_\\. ](?P<01>\\d{2})\\b',
+                // 13-02-2006
+                '(?i)^(?P<01>\\d{2})[\\-\\_\\. ](?P<02>\\d{2})[\\-\\_\\. ](?P<2006>(?:19|20)\\d{2})\\b',
+                // 02-13-2006
+                '(?i)^(?P<02>\\d{2})[\\-\\_\\. ](?P<01>\\d{2})[\\-\\_\\. ](?P<2006>(?:19|20)\\d{2})\\b',
+                // 2nd Jan 2006, 13 Dec 2011, Nov 1999
+                '(?i)^(?:(?P<_2>\\d{1,2})(?:th|st|nd|rd)?[\\-\\_\\. ])?(?P<Jan>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\\-\\_\\. ](?P<2006>(?:19|20)\\d{2})\\b',
+                // 01-August-1998
+                '(?i)^(?P<_2>\\d{1,2})[\\-\\_\\. ](?P<January>January|February|March|April|May|June|July|August|September|October|November|December)[\\-\\_\\. ](?P<2006>(?:19|20)\\d{2})\\b',
+                // MAY-30-1992
+                '(?i)^(?P<Jan>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\\-\\_\\. ](?P<_2>\\d{1,2})[\\-\\_\\. ](?P<2006>(?:19|20)\\d{2})\\b',
+                // 17.12.15, 20-9-9
+                '(?i)^(?P<YY>[12]\\d)[\\-\\_\\. ](?P<01>\\d\\d?)[\\-\\_\\. ](?P<02>\\d\\d?)\\b',
+            ),		
             () => new VersionLexer(
                 // v1.17, v1, v1.2a, v1b
                 '^(?:version[\\-\\_\\. ])?(?P<v>v[\\-\\_\\. ]?\\d{1,2}(?:[\\._ ]\\d{1,2}[a-z]?\\d*){0,3})\\b',
@@ -3022,24 +3036,6 @@ function defaultLexerTypes() {
                 '^version[\\-\\_\\. ](?P<V>\\d{2,}|\\d{2}[a-z]{1,2}\\d{1,2})\\b',
                 // 11.09.1, 100.000.99999999999, 23.3.2.458
                 '^(?P<u>\\d{1,3}\\.\\d{1,3}\\.\\d{1,16}(\\.\\d{1,16})?)\\b',
-            ),
-            () => new DateLexer(
-                // 2006-01-02, 2006
-                '^(?P<y_2006>(?:19|20)\\d{2})(?:[\\-\\_\\. ](?P<m_01>\\d{2})[\\-\\_\\. ](?P<d_02>\\d{2}))?\\b',
-                // 2006-01
-                '^(?P<y_2006>(?:19|20)\\d{2})?:[\\-\\_\\. ](?P<m_01>\\d{2})\\b',
-                // 02-13-2006 (MM-DD-YYYY)
-                '^(?P<m_02>\\d{2})[\\-\\_\\. ](?P<d_01>\\d{2})[\\-\\_\\. ](?P<y_2006>(?:19|20)\\d{2})\\b',
-                // 13-02-2006 (DD-MM-YYYY)
-                '^(?P<d_01>\\d{2})[\\-\\_\\. ](?P<m_02>\\d{2})[\\-\\_\\. ](?P<y_2006>(?:19|20)\\d{2})\\b',
-                // 2nd Jan 2006, 13 Dec 2011, Nov 1999
-                '^(?:(?P<d__2>\\d{1,2})(?:th|st|nd|rd)?[\\-\\_\\. ])?(?P<m_Jan>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\\-\\_\\. ](?P<y_2006>(?:19|20)\\d{2})\\b',
-                // 01-August-1998
-                '^(?P<d__2>\\d{1,2})[\\-\\_\\. ](?P<m_January>January|February|March|April|May|June|July|August|September|October|November|December)[\\-\\_\\. ](?P<y_2006>(?:19|20)\\d{2})\\b',
-                // MAY-30-1992
-                '^(?P<m_Jan>Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\\-\\_\\. ](?P<d__2>\\d{1,2})[\\-\\_\\. ](?P<y_2006>(?:19|20)\\d{2})\\b',
-                // 17.12.15, 20-9-9
-                '^(?P<y_YY>[12]\\d)[\\-\\_\\. ](?P<m_01>\\d\\d?)[\\-\\_\\. ](?P<d_02>\\d\\d?)\\b',
             ),
             () => new RegexpSourceLexer(TagType.CODEC, true),
             () => new RegexpSourceLexer(TagType.HDR, true),
