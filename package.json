@@ -1,6 +1,6 @@
 {
   "name": "@x4trioz925c3/rls-parser",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "A comprehensive NodeJS release name parser.",
   "main": "rls.js",
   "dependencies": {

@@ -4352,13 +4352,65 @@ class TagParser {
      * @param {boolean} [typeOnly=false] If true, performs a faster parse to only determine the type.
      * @returns {Release} The parsed Release object.
      */
+    /**
+     * Parses a full Release object from a source string.
+     * @param {string} src The source string.
+     * @param {boolean} [typeOnly=false] If true, performs a faster parse to only determine the type.
+     * @returns {object} The parsed Release object, formatted as a plain object.
+     */
     parseRelease(src, typeOnly = false) {
         const [tags, endIndex] = this.parse(src);
         if (typeOnly) {
             return this.builder.buildTypeOnly(tags, endIndex);
         }
-        return this.builder.build(tags, endIndex);
-    }
+        const r = this.builder.build(tags, endIndex);
+
+        const seriesEpisodes = r.seriesEpisodes();
+
+        return {
+            type: r.type,
+            artist: r.artist,
+            title: r.title,
+            subtitle: r.subtitle,
+            alt: r.alt,
+            platform: r.platform,
+            arch: r.arch,
+            source: r.source,
+            resolution: r.resolution,
+            collection: r.collection,
+            year: r.year,
+            month: r.month,
+            day: r.day,
+            series: r.series,
+            episode: r.episode,
+            seriesEpisodes: seriesEpisodes.length > 1 ?
+                seriesEpisodes.map(ep => `S${String(ep[0]).padStart(2, '0')}E${String(ep[1]).padStart(2, '0')}`).join(' ') :
+                "",
+            version: r.version,
+            disc: r.disc,
+            codec: r.codec.join(' '),
+            hdr: r.hdr.join(' '),
+            audio: r.audio.join(' '),
+            channels: r.channels,
+            other: r.other.join(' '),
+            cut: r.cut.join(' '),
+            edition: r.edition.join(' '),
+            language: r.language.join(' '),
+            size: r.size,
+            region: r.region,
+            container: r.container,
+            genre: r.genre,
+            id: r.id,
+            group: r.group,
+            meta: r.meta.join(' '),
+            site: r.site,
+            sum: r.sum,
+            pass: r.pass_,
+            req: r.req ? 1 : 0,
+            ext: r.ext,
+            unused: r.getUnused().map(tag => tag.format('s')).join(' '),
+        };
+    }	
 }
 
 
